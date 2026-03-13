@@ -14,14 +14,13 @@ abstract class NewPostStoreBase with Store {
   bool isLoading = false;
 
   @observable
-  String? imagePath; // Guarda o caminho da foto tirada
+  String? imagePath;
 
   @observable
   String? errorMessage;
 
   @action
   void setImagePath(String? path) {
-    // <-- Adicione o ponto de interrogação aqui
     imagePath = path;
   }
 
@@ -36,7 +35,7 @@ abstract class NewPostStoreBase with Store {
 
     return result.fold(
       (post) {
-        imagePath = null; // Limpa a foto após sucesso
+        imagePath = null;
         return true;
       },
       (error) {

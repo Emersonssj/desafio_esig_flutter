@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart' show AssetEntityImageProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../stores/new_post_store.dart';
 import '../stores/feed_store.dart';
+import '../stores/new_post_store.dart';
 
 class NewPostPage extends StatefulWidget {
   final VoidCallback onPostSuccess;
+
   const NewPostPage({super.key, required this.onPostSuccess});
 
   @override
@@ -23,13 +26,53 @@ class _NewPostPageState extends State<NewPostPage> {
   final _descriptionController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
+  List<AssetEntity> _mediaList = [];
+  bool _isLoadingGallery = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDevicePhotos();
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
   }
 
-  // Função 1: Abre a Câmera
+  Future<void> _loadDevicePhotos() async {
+    final PermissionState ps = await PhotoManager.requestPermissionExtend();
+
+    if (ps.isAuth || ps.hasAccess) {
+      List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(type: RequestType.image);
+
+      if (albums.isNotEmpty) {
+        List<AssetEntity> media = await albums[0].getAssetListPaged(page: 0, size: 60);
+
+        if (mounted) {
+          setState(() {
+            _mediaList = media;
+            _isLoadingGallery = false;
+          });
+
+          if (media.isNotEmpty) {
+            final firstFile = await media.first.file;
+            if (firstFile != null) {
+              _newPostStore.setImagePath(firstFile.path);
+            }
+          }
+        }
+      } else {
+        setState(() => _isLoadingGallery = false);
+      }
+    } else {
+      // Caso o usuário negue a permissão
+      setState(() => _isLoadingGallery = false);
+      PhotoManager.openSetting();
+    }
+  }
+
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
 
@@ -38,43 +81,25 @@ class _NewPostPageState extends State<NewPostPage> {
     }
   }
 
-  // Função 2: Abre a Galeria
-  Future<void> _pickFromGallery() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-
-    if (image != null) {
-      _newPostStore.setImagePath(image.path);
-    }
-  }
-
   Future<void> _publish() async {
     FocusScope.of(context).unfocus();
-
-    // 1. Pega o SharedPreferences do GetIt
     final prefs = GetIt.I.get<SharedPreferences>();
-    // 2. Resgata o username (com fallback de segurança)
-    final loggedUsername = prefs.getString('logged_username') ?? 'Desconhecido';
+    final loggedUsername = prefs.getString('logged_username') ?? 'Usuário';
 
-    // 3. Passa o nome real para a Store
-    final success = await _newPostStore.createPost(
-      loggedUsername, // <-- AQUI
-      _descriptionController.text,
-    );
+    final success = await _newPostStore.createPost(loggedUsername, _descriptionController.text);
+
+    if (!mounted) return;
 
     if (success) {
-      // 1. Limpa o campo de texto e a imagem da tela de postagem
+      // Limpa os campos
       _descriptionController.clear();
       _newPostStore.setImagePath('');
-
-      // 2. Chama a Store do Feed para recarregar a lista lá do servidor
       _feedStore.fetchPosts(isRefresh: true);
 
-      // 3. Mostra o aviso de sucesso
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Publicado com sucesso!'), backgroundColor: Colors.green));
 
-      // 4. MÁGICA: Executa a função que muda para a aba do Feed
       widget.onPostSuccess();
     } else {
       ScaffoldMessenger.of(
@@ -90,124 +115,122 @@ class _NewPostPageState extends State<NewPostPage> {
         title: const Text('Nova Publicação'),
         actions: [
           Observer(
-            builder: (_) => IconButton(
-              icon: _newPostStore.isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.send, color: Colors.blue),
-              onPressed: _newPostStore.isLoading ? null : _publish,
-            ),
+            builder: (_) {
+              final isReady = _newPostStore.imagePath != null && _newPostStore.imagePath!.isNotEmpty;
+
+              if (_newPostStore.isLoading) {
+                return const Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: Center(
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                );
+              }
+
+              return IconButton(
+                icon: const Icon(Icons.send, color: Colors.blue),
+                onPressed: isReady ? _publish : null,
+              );
+            },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Preview da Câmera ou Galeria
-            Observer(
-              builder: (_) {
-                // Se não tem imagem, mostra os botões de escolha
-                if (_newPostStore.imagePath == null || _newPostStore.imagePath!.isEmpty) {
-                  return Row(
-                    children: [
-                      // Botão Câmera
-                      Expanded(
-                        child: InkWell(
+      body: Column(
+        children: [
+          Expanded(
+            child: _isLoadingGallery
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 2,
+                      mainAxisSpacing: 2,
+                    ),
+                    itemCount: _mediaList.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return InkWell(
                           onTap: _takePhoto,
-                          borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[400]!),
-                            ),
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Câmera',
-                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-                                ),
+                                Icon(Icons.camera_alt, size: 40),
+                                SizedBox(height: 4),
+                                Text('Câmera', style: TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Botão Galeria
-                      Expanded(
-                        child: InkWell(
-                          onTap: _pickFromGallery,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[400]!),
-                            ),
-                            child: const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.photo_library, size: 40, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Galeria',
-                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
+                        );
+                      }
+
+                      // OS DEMAIS QUADRADOS SÃO AS FOTOS DA GALERIA
+                      final asset = _mediaList[index - 1];
+
+                      return InkWell(
+                        onTap: () async {
+                          // Quando o usuário clica, busca o arquivo físico e manda para a Store
+                          final file = await asset.file;
+                          if (file != null) {
+                            _newPostStore.setImagePath(file.path);
+                          }
+                        },
+                        // AssetEntityImageProvider é otimizado e evita vazamento de memória ao scrollar rápido
+                        child: Image(
+                          image: AssetEntityImageProvider(
+                            asset,
+                            isOriginal: false, // Pega miniatura para não travar a UI
+                            thumbnailSize: const ThumbnailSize.square(250),
                           ),
+                          fit: BoxFit.cover,
                         ),
-                      ),
-                    ],
-                  );
-                }
-
-                // Se já escolheu a imagem, mostra o preview com o botão de deletar
-                return Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        File(_newPostStore.imagePath!),
-                        height: 250,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.black54,
-                        child: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          onPressed: () => _newPostStore.setImagePath(''),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            height: 120,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [BoxShadow(color: Colors.grey, blurRadius: 1, offset: const Offset(0, -1))],
             ),
-            const SizedBox(height: 24),
-
-            // Campo de Descrição
-            TextField(
-              controller: _descriptionController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'O que você quer compartilhar?',
-                border: OutlineInputBorder(),
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Observer(
+                  builder: (_) {
+                    final path = _newPostStore.imagePath;
+                    if (path != null && path.isNotEmpty) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(File(path), width: 80, height: 80, fit: BoxFit.cover),
+                      );
+                    }
+                    return Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _descriptionController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(hintText: 'Escreva uma legenda...', border: InputBorder.none),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

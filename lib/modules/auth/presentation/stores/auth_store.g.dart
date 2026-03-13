@@ -45,6 +45,16 @@ mixin _$AuthStore on AuthStoreBase, Store {
     });
   }
 
+  late final _$registerAsyncAction = AsyncAction(
+    'AuthStoreBase.register',
+    context: context,
+  );
+
+  @override
+  Future<bool> register(String username, String password) {
+    return _$registerAsyncAction.run(() => super.register(username, password));
+  }
+
   late final _$logoutAsyncAction = AsyncAction(
     'AuthStoreBase.logout',
     context: context,

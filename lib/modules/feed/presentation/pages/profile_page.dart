@@ -31,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(loggedUsername),
+        title: Text('Perfil'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
@@ -45,20 +45,24 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 24),
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.blue.shade100,
-            child: Text(
-              loggedUsername.substring(0, 1).toUpperCase(),
-              style: const TextStyle(fontSize: 40, color: Colors.blue),
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            child: Row(
+              spacing: 8,
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Text(
+                    loggedUsername.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(fontSize: 30, color: Colors.blue),
+                  ),
+                ),
+                Text(loggedUsername, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(loggedUsername, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
           const Divider(),
-
           Expanded(
             child: Observer(
               builder: (_) {

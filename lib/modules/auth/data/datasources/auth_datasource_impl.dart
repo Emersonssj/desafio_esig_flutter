@@ -11,10 +11,15 @@ class AuthDatasourceImpl implements AuthDatasource {
   AsyncResult<String> login(String username, String password) async {
     final response = await _httpService.post('/auth/login', data: {'login': username, 'password': password});
 
-    // Mapeia a resposta de Sucesso para pegar apenas o Token
     return response.map((res) {
       final data = res.content as Map<String, dynamic>;
       return data['token'] as String;
     });
+  }
+
+  @override
+  AsyncResult<Unit> register(String username, String password) async {
+    final response = await _httpService.post('/auth/register', data: {'login': username, 'password': password});
+    return response.map((_) => unit);
   }
 }

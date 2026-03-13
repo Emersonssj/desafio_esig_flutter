@@ -41,4 +41,9 @@ class AuthRepositoryImpl implements AuthRepository {
     await _sharedPrefs.remove('logged_username');
     return Success(unit);
   }
+
+  @override
+  AsyncResult<Unit> register(String username, String password) async {
+    return await _datasource.register(username, password);
+  }
 }

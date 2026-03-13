@@ -14,7 +14,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  // Criamos uma função para mudar a aba via código
   void _changeTab(int index) {
     setState(() {
       _currentIndex = index;
@@ -23,15 +22,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Movemos a lista de páginas para dentro do build para podermos usar o _changeTab
-    final List<Widget> pages = [
-      const FeedPage(),
-      // Passamos a função para a NewPostPage
-      NewPostPage(
-        onPostSuccess: () => _changeTab(0), // Volta para a aba 0 (Feed)
-      ),
-      const ProfilePage(),
-    ];
+    final List<Widget> pages = [const FeedPage(), NewPostPage(onPostSuccess: () => _changeTab(0)), const ProfilePage()];
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: pages),

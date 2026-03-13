@@ -27,7 +27,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
               Navigator.pop(ctx);
               final success = await _feedStore.deletePost(widget.post.id);
               if (success && mounted) {
-                Navigator.pop(context); // Volta para o perfil
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excluído com sucesso!')));
               }
             },
@@ -54,13 +54,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final success = await _feedStore.updatePost(
-                widget.post.id,
-                widget.post.username,
-                editController.text, // Nova descrição
-              );
+              final success = await _feedStore.updatePost(widget.post.id, widget.post.username, editController.text);
               if (success && mounted) {
-                Navigator.pop(context); // Volta para o perfil para recarregar a view atualizada
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Atualizado com sucesso!')));
               }
             },
@@ -75,7 +71,6 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalhes'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.blue),

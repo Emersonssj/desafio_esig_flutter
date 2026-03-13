@@ -6,9 +6,7 @@ import 'data/datasources/auth_datasource.dart';
 import 'data/datasources/auth_datasource_impl.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/auth_repository_impl.dart';
-import 'domain/usecases/check_auth_usecase.dart';
-import 'domain/usecases/login_usecase.dart';
-import 'domain/usecases/logout_usecase.dart';
+import 'domain/usecases/usecases.dart';
 import 'presentation/stores/auth_store.dart';
 
 Future<void> loadAuthDependencies(GetIt getIt) async {
@@ -24,9 +22,10 @@ Future<void> loadAuthDependencies(GetIt getIt) async {
   getIt.registerLazySingleton(() => LoginUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => CheckAuthUseCase(getIt<AuthRepository>()));
   getIt.registerLazySingleton(() => LogoutUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => RegisterUseCase(getIt<AuthRepository>()));
 
   // Stores
   getIt.registerLazySingleton(
-    () => AuthStore(getIt<LoginUseCase>(), getIt<CheckAuthUseCase>(), getIt<LogoutUseCase>()),
+    () => AuthStore(getIt<LoginUseCase>(), getIt<CheckAuthUseCase>(), getIt<LogoutUseCase>(), getIt<RegisterUseCase>()),
   );
 }
