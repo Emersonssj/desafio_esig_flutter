@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import '../../../feed/presentation/pages/main_page.dart';
 import '../stores/auth_store.dart';
 import 'login_page.dart';
 
@@ -28,7 +29,7 @@ class _SplashPageState extends State<SplashPage> {
     if (isLoggedIn) {
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute<void>(builder: (BuildContext context) => const LoginPage()));
+      ).pushReplacement(MaterialPageRoute<void>(builder: (BuildContext context) => const MainPage()));
     } else {
       Navigator.of(
         context,

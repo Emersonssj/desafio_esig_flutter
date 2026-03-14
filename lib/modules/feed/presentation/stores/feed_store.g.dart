@@ -94,9 +94,19 @@ mixin _$FeedStore on FeedStoreBase, Store {
   );
 
   @override
-  Future<bool> updatePost(int id, String username, String description) {
+  Future<bool> updatePost({
+    required int id,
+    required String username,
+    required String description,
+    String? imagePath,
+  }) {
     return _$updatePostAsyncAction.run(
-      () => super.updatePost(id, username, description),
+      () => super.updatePost(
+        id: id,
+        username: username,
+        description: description,
+        imagePath: imagePath,
+      ),
     );
   }
 

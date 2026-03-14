@@ -8,15 +8,13 @@ class UpdatePostUsecase {
 
   UpdatePostUsecase(this._repository);
 
-  AsyncResult<PostEntity, HttpException> call({
+  Future<Result<PostEntity, HttpException>> call({
     required int id,
     required String username,
     required String description,
-    String? imagePath,
+    String? imagePath, // <-- PARÂMETRO ADICIONADO AQUI
   }) {
-    if (description.isEmpty) {
-      return AsyncResult.error(Exception('A descrição não pode ser vazia.'));
-    }
+    // Repassa para o repositório
     return _repository.updatePost(id, username, description, imagePath);
   }
 }

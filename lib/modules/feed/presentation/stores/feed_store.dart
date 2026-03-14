@@ -44,8 +44,14 @@ abstract class FeedStoreBase with Store {
   }
 
   @action
-  Future<bool> updatePost(int id, String username, String description) async {
-    final result = await _updatePostUseCase(id: id, username: username, description: description);
+  Future<bool> updatePost({
+    required int id,
+    required String username,
+    required String description,
+    String? imagePath,
+  }) async {
+    final result = await _updatePostUseCase(id: id, username: username, description: description, imagePath: imagePath);
+
     return result.fold(
       (updatedPost) {
         final index = posts.indexWhere((p) => p.id == id);
@@ -54,7 +60,7 @@ abstract class FeedStoreBase with Store {
         }
         return true;
       },
-      (error) {
+      (HttpException error) {
         appError = error;
         return false;
       },
