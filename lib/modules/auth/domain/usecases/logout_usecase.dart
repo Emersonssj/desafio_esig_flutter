@@ -7,7 +7,7 @@ class LogoutUseCase {
 
   LogoutUseCase(this._repository);
 
-  AsyncResult<Unit> call() {
+  AsyncResult<Unit, Exception> call() {
     return _repository.logout();
   }
 }

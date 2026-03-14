@@ -27,6 +27,24 @@ mixin _$NewPostStore on NewPostStoreBase, Store {
     });
   }
 
+  late final _$appErrorAtom = Atom(
+    name: 'NewPostStoreBase.appError',
+    context: context,
+  );
+
+  @override
+  HttpException? get appError {
+    _$appErrorAtom.reportRead();
+    return super.appError;
+  }
+
+  @override
+  set appError(HttpException? value) {
+    _$appErrorAtom.reportWrite(value, super.appError, () {
+      super.appError = value;
+    });
+  }
+
   late final _$imagePathAtom = Atom(
     name: 'NewPostStoreBase.imagePath',
     context: context,
@@ -42,24 +60,6 @@ mixin _$NewPostStore on NewPostStoreBase, Store {
   set imagePath(String? value) {
     _$imagePathAtom.reportWrite(value, super.imagePath, () {
       super.imagePath = value;
-    });
-  }
-
-  late final _$errorMessageAtom = Atom(
-    name: 'NewPostStoreBase.errorMessage',
-    context: context,
-  );
-
-  @override
-  String? get errorMessage {
-    _$errorMessageAtom.reportRead();
-    return super.errorMessage;
-  }
-
-  @override
-  set errorMessage(String? value) {
-    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
-      super.errorMessage = value;
     });
   }
 
@@ -96,8 +96,8 @@ mixin _$NewPostStore on NewPostStoreBase, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
-imagePath: ${imagePath},
-errorMessage: ${errorMessage}
+appError: ${appError},
+imagePath: ${imagePath}
     ''';
   }
 }

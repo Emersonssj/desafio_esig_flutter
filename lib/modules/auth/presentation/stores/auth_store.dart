@@ -52,7 +52,23 @@ abstract class AuthStoreBase with Store {
     isLoading = false;
 
     return result.fold((token) => true, (error) {
-      errorMessage = error.toString();
+      try {
+        final String? apiMessage = (error as dynamic).userMessage;
+
+        if (apiMessage != null && apiMessage.isNotEmpty) {
+          errorMessage = apiMessage;
+        } else {
+          errorMessage = 'Erro ao fazer login.';
+        }
+      } catch (_) {
+        String cleanMessage = error.toString().replaceAll('Exception: ', '');
+        if (cleanMessage.contains('Connection Timeout') || cleanMessage.contains('Failed host lookup')) {
+          errorMessage = 'Sem conexão com o servidor.';
+        } else {
+          errorMessage = cleanMessage;
+        }
+      }
+
       return false;
     });
   }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
+import '../../../../core/network/http/http_exception.dart';
 import '../../../../core/network/http/http_service.dart';
 import '../dtos/post_dto.dart';
 import 'feed_datasource.dart';
@@ -11,7 +12,7 @@ class FeedDatasourceImpl implements FeedDatasource {
   FeedDatasourceImpl(this._httpService);
 
   @override
-  AsyncResult<List<PostDto>> getPosts(int page) async {
+  AsyncResult<List<PostDto>, HttpException> getPosts(int page) async {
     final response = await _httpService.get('/api/posts?page=$page&size=10');
 
     return response.map((res) {
@@ -23,7 +24,7 @@ class FeedDatasourceImpl implements FeedDatasource {
   }
 
   @override
-  AsyncResult<PostDto> createPost(String username, String description, String? imagePath) async {
+  AsyncResult<PostDto, HttpException> createPost(String username, String description, String? imagePath) async {
     final formData = FormData.fromMap({'username': username, 'description': description});
 
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -38,13 +39,13 @@ class FeedDatasourceImpl implements FeedDatasource {
   }
 
   @override
-  AsyncResult<Unit> deletePost(int id) async {
+  AsyncResult<Unit, HttpException> deletePost(int id) async {
     final response = await _httpService.delete('/api/posts/$id');
     return response.map((_) => unit);
   }
 
   @override
-  AsyncResult<PostDto> updatePost(int id, String username, String description, String? imagePath) async {
+  AsyncResult<PostDto, HttpException> updatePost(int id, String username, String description, String? imagePath) async {
     final formData = FormData.fromMap({'username': username, 'description': description});
 
     if (imagePath != null && imagePath.isNotEmpty) {

@@ -1,5 +1,6 @@
 import 'package:result_dart/result_dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/network/http/http_exception.dart';
 import '../../data/datasources/auth_datasource.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -12,7 +13,7 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._datasource, this._sharedPrefs);
 
   @override
-  AsyncResult<String> login(String username, String password) async {
+  AsyncResult<String, HttpException> login(String username, String password) async {
     final result = await _datasource.login(username, password);
 
     if (result.isSuccess()) {
@@ -25,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  AsyncResult<String> checkCachedAuth() async {
+  AsyncResult<String, Exception> checkCachedAuth() async {
     final token = _sharedPrefs.getString(_tokenKey);
 
     if (token != null && token.isNotEmpty) {
@@ -36,14 +37,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  AsyncResult<Unit> logout() async {
+  AsyncResult<Unit, Exception> logout() async {
     await _sharedPrefs.remove(_tokenKey);
     await _sharedPrefs.remove('logged_username');
     return Success(unit);
   }
 
   @override
-  AsyncResult<Unit> register(String username, String password) async {
+  AsyncResult<Unit, HttpException> register(String username, String password) async {
     return await _datasource.register(username, password);
   }
 }

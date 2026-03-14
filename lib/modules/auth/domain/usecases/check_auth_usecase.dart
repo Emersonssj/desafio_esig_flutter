@@ -6,5 +6,5 @@ class CheckAuthUseCase {
 
   CheckAuthUseCase(this._repository);
 
-  AsyncResult<String> call() => _repository.checkCachedAuth();
+  AsyncResult<String, Exception> call() => _repository.checkCachedAuth();
 }

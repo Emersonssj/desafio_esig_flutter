@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
-import 'exceptions/handle_http_exception.dart';
-import 'exceptions/http_exceptions.dart';
+import 'http_exception.dart';
 import 'http_service.dart';
 
 class HttpServiceImpl implements HttpService {
@@ -15,7 +14,11 @@ class HttpServiceImpl implements HttpService {
   late final Dio _dio;
 
   @override
-  AsyncResult<HttpResponse> get(String path, {Map<String, dynamic>? headers, Map<String, dynamic>? queryParams}) async {
+  AsyncResult<HttpResponse, HttpException> get(
+    String path, {
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? queryParams,
+  }) async {
     try {
       final response = await _dio.get(
         path,
@@ -29,7 +32,7 @@ class HttpServiceImpl implements HttpService {
   }
 
   @override
-  AsyncResult<HttpResponse> post(
+  AsyncResult<HttpResponse, HttpException> post(
     String path, {
     Duration? requestTimeout,
     dynamic data,
@@ -50,7 +53,7 @@ class HttpServiceImpl implements HttpService {
   }
 
   @override
-  AsyncResult<HttpResponse> put(
+  AsyncResult<HttpResponse, HttpException> put(
     String path, {
     dynamic data,
     Map<String, dynamic>? headers,
@@ -70,7 +73,7 @@ class HttpServiceImpl implements HttpService {
   }
 
   @override
-  AsyncResult<HttpResponse> delete(
+  AsyncResult<HttpResponse, HttpException> delete(
     String path, {
     dynamic data,
     Map<String, dynamic>? headers,
@@ -90,7 +93,7 @@ class HttpServiceImpl implements HttpService {
   }
 
   @override
-  AsyncResult<HttpResponse> download(
+  AsyncResult<HttpResponse, HttpException> download(
     String urlPath,
     String savePath, {
     Map<String, dynamic>? headers,
@@ -112,7 +115,7 @@ class HttpServiceImpl implements HttpService {
   }
 
   @override
-  AsyncResult<HttpResponse> upload(
+  AsyncResult<HttpResponse, HttpException> upload(
     String path,
     FormData data, {
     Map<String, dynamic>? headers,
@@ -131,31 +134,19 @@ class HttpServiceImpl implements HttpService {
     }
   }
 
-  Failure<HttpResponse, Exception> _handleHttpException(DioException e) {
+  Failure<HttpResponse, HttpException> _handleHttpException(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout) {
-      return Failure(
-        handleHttpException(
-          status: 408,
-          title: 'Connection Timeout',
-          userMessage: 'Connection Timeout',
-          timestamp: DateTime.now(),
-        ),
-      );
+      return Failure(HttpException(statusCode: 408, message: 'Tempo de conexão esgotado.'));
     }
 
-    try {
-      final exception = handleHttpException(
-        status: e.response!.data['status'] ?? 0,
-        title: e.response!.data['title'] ?? 'Error',
-        userMessage: e.response!.data['userMessage'] ?? 'Internal Server Error',
-        timestamp: DateTime.now(),
-        detail: e.response!.data['detail'],
-        type: e.response!.data['type'],
-        objects: ObjectErrors.fromJson(e.response!.data['objects']),
-      );
-      return Failure(exception);
-    } catch (e) {
-      return Failure(HttpUnhandledException.unknown());
+    if (e.response != null && e.response!.data != null) {
+      // Pega os dados exatos do seu Spring Boot
+      final status = e.response!.data['status'] ?? e.response!.statusCode ?? 500;
+      final userMessage = e.response!.data['userMessage'] ?? 'Erro interno no servidor.';
+
+      return Failure(HttpException(statusCode: status, message: userMessage));
     }
+
+    return Failure(HttpException(statusCode: 500, message: 'Erro desconhecido.'));
   }
 }

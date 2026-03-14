@@ -1,4 +1,5 @@
 import 'package:result_dart/result_dart.dart';
+import '../../../../core/network/http/http_exception.dart';
 import '../entities/post_entity.dart';
 import '../repositories/feed_repository.dart';
 
@@ -7,7 +8,7 @@ class UpdatePostUsecase {
 
   UpdatePostUsecase(this._repository);
 
-  AsyncResult<PostEntity> call({
+  AsyncResult<PostEntity, HttpException> call({
     required int id,
     required String username,
     required String description,

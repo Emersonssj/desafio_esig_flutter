@@ -67,7 +67,6 @@ class _NewPostPageState extends State<NewPostPage> {
         setState(() => _isLoadingGallery = false);
       }
     } else {
-      // Caso o usuário negue a permissão
       setState(() => _isLoadingGallery = false);
       PhotoManager.openSetting();
     }
@@ -91,7 +90,6 @@ class _NewPostPageState extends State<NewPostPage> {
     if (!mounted) return;
 
     if (success) {
-      // Limpa os campos
       _descriptionController.clear();
       _newPostStore.setImagePath('');
       _feedStore.fetchPosts(isRefresh: true);
@@ -104,7 +102,7 @@ class _NewPostPageState extends State<NewPostPage> {
     } else {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(_newPostStore.errorMessage ?? 'Erro'), backgroundColor: Colors.red));
+      ).showSnackBar(SnackBar(content: Text(_newPostStore.appError!.message), backgroundColor: Colors.red));
     }
   }
 
@@ -164,23 +162,18 @@ class _NewPostPageState extends State<NewPostPage> {
                           ),
                         );
                       }
-
-                      // OS DEMAIS QUADRADOS SÃO AS FOTOS DA GALERIA
                       final asset = _mediaList[index - 1];
-
                       return InkWell(
                         onTap: () async {
-                          // Quando o usuário clica, busca o arquivo físico e manda para a Store
                           final file = await asset.file;
                           if (file != null) {
                             _newPostStore.setImagePath(file.path);
                           }
                         },
-                        // AssetEntityImageProvider é otimizado e evita vazamento de memória ao scrollar rápido
                         child: Image(
                           image: AssetEntityImageProvider(
                             asset,
-                            isOriginal: false, // Pega miniatura para não travar a UI
+                            isOriginal: false,
                             thumbnailSize: const ThumbnailSize.square(250),
                           ),
                           fit: BoxFit.cover,

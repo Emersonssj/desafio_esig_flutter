@@ -39,7 +39,7 @@ dependencies:
   flutter_mobx: ^2.3.0
   get_it: ^9.2.1
   flutter_dotenv: ^6.0.0
-  result_dart: ^2.2.0
+  result_dart: ^1.1.0
   shared_preferences: ^2.5.4
   image_picker: ^1.2.1
   photo_manager: ^3.9.0

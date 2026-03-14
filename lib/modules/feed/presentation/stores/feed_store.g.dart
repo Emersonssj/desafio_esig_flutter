@@ -42,6 +42,24 @@ mixin _$FeedStore on FeedStoreBase, Store {
     });
   }
 
+  late final _$appErrorAtom = Atom(
+    name: 'FeedStoreBase.appError',
+    context: context,
+  );
+
+  @override
+  HttpException? get appError {
+    _$appErrorAtom.reportRead();
+    return super.appError;
+  }
+
+  @override
+  set appError(HttpException? value) {
+    _$appErrorAtom.reportWrite(value, super.appError, () {
+      super.appError = value;
+    });
+  }
+
   late final _$hasMoreAtom = Atom(
     name: 'FeedStoreBase.hasMore',
     context: context,
@@ -57,24 +75,6 @@ mixin _$FeedStore on FeedStoreBase, Store {
   set hasMore(bool value) {
     _$hasMoreAtom.reportWrite(value, super.hasMore, () {
       super.hasMore = value;
-    });
-  }
-
-  late final _$errorMessageAtom = Atom(
-    name: 'FeedStoreBase.errorMessage',
-    context: context,
-  );
-
-  @override
-  String? get errorMessage {
-    _$errorMessageAtom.reportRead();
-    return super.errorMessage;
-  }
-
-  @override
-  set errorMessage(String? value) {
-    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
-      super.errorMessage = value;
     });
   }
 
@@ -117,8 +117,8 @@ mixin _$FeedStore on FeedStoreBase, Store {
     return '''
 posts: ${posts},
 isLoading: ${isLoading},
-hasMore: ${hasMore},
-errorMessage: ${errorMessage}
+appError: ${appError},
+hasMore: ${hasMore}
     ''';
   }
 }

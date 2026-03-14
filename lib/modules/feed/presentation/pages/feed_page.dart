@@ -47,8 +47,8 @@ class _FeedPageState extends State<FeedPage> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (_feedStore.posts.isEmpty && _feedStore.errorMessage != null) {
-              return Center(child: Text(_feedStore.errorMessage!));
+            if (_feedStore.posts.isEmpty && _feedStore.appError != null) {
+              return Center(child: Text(_feedStore.appError!.message));
             }
 
             if (_feedStore.posts.isEmpty) {

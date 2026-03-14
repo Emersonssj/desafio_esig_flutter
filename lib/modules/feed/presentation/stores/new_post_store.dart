@@ -1,4 +1,5 @@
 import 'package:mobx/mobx.dart';
+import '../../../../core/network/http/http_exception.dart';
 import '../../domain/usecases/create_post_usecase.dart';
 
 part 'new_post_store.g.dart';
@@ -14,10 +15,10 @@ abstract class NewPostStoreBase with Store {
   bool isLoading = false;
 
   @observable
-  String? imagePath;
+  HttpException? appError;
 
   @observable
-  String? errorMessage;
+  String? imagePath;
 
   @action
   void setImagePath(String? path) {
@@ -27,7 +28,7 @@ abstract class NewPostStoreBase with Store {
   @action
   Future<bool> createPost(String username, String description) async {
     isLoading = true;
-    errorMessage = null;
+    appError = null;
 
     final result = await _createPostUseCase(username: username, description: description, imagePath: imagePath);
 
@@ -39,7 +40,7 @@ abstract class NewPostStoreBase with Store {
         return true;
       },
       (error) {
-        errorMessage = 'Erro ao publicar: ${error.toString()}';
+        appError = error;
         return false;
       },
     );

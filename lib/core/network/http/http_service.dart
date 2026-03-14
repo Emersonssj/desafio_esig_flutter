@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
-abstract class HttpService {
-  AsyncResult<HttpResponse> get(String path, {Map<String, dynamic>? headers, Map<String, dynamic>? queryParams});
+import 'http_exception.dart';
 
-  AsyncResult<HttpResponse> post(
+abstract class HttpService {
+  AsyncResult<HttpResponse, HttpException> get(
+    String path, {
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? queryParams,
+  });
+
+  AsyncResult<HttpResponse, HttpException> post(
     String path, {
     Duration? requestTimeout,
     dynamic data,
@@ -12,21 +18,21 @@ abstract class HttpService {
     Map<String, dynamic>? queryParams,
   });
 
-  AsyncResult<HttpResponse> put(
+  AsyncResult<HttpResponse, HttpException> put(
     String path, {
     dynamic data,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? queryParams,
   });
 
-  AsyncResult<HttpResponse> delete(
+  AsyncResult<HttpResponse, HttpException> delete(
     String path, {
     dynamic data,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? queryParams,
   });
 
-  AsyncResult<HttpResponse> download(
+  AsyncResult<HttpResponse, HttpException> download(
     String urlPath,
     String savePath, {
     Map<String, dynamic>? headers,
@@ -34,7 +40,7 @@ abstract class HttpService {
     void Function(int, int)? onReceiveProgress,
   });
 
-  AsyncResult<HttpResponse> upload(
+  AsyncResult<HttpResponse, HttpException> upload(
     String path,
     FormData data, {
     Map<String, dynamic>? headers,

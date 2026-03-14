@@ -628,10 +628,10 @@ packages:
     dependency: "direct main"
     description:
       name: result_dart
-      sha256: "80096f0928e276c024e53cf1bb2aaffd5a94623dac8fdfa5cb3529e82b51eb3c"
+      sha256: "3c69c864a08df0f413a86be211d07405e9a53cc1ac111e3cc8365845a0fb5288"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "1.1.1"
   shared_preferences:
     dependency: "direct main"
     description:

@@ -1,4 +1,5 @@
 import 'package:result_dart/result_dart.dart';
+import '../../../../core/network/http/http_exception.dart';
 import '../repositories/auth_repository.dart';
 
 class LoginUseCase {
@@ -6,7 +7,7 @@ class LoginUseCase {
 
   LoginUseCase(this._repository);
 
-  AsyncResult<String> call(String username, String password) {
+  AsyncResult<String, HttpException> call(String username, String password) {
     if (username.isEmpty || password.isEmpty) {
       return AsyncResult.error(Exception('Usuário e senha são obrigatórios.'));
     }
