@@ -1,10 +1,11 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:photo_manager_image_provider/photo_manager_image_provider.dart' show AssetEntityImageProvider;
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../stores/feed_store.dart';
@@ -19,7 +20,7 @@ class NewPostPage extends StatefulWidget {
   State<NewPostPage> createState() => _NewPostPageState();
 }
 
-class _NewPostPageState extends State<NewPostPage> {
+class _NewPostPageState extends State<NewPostPage> with WidgetsBindingObserver {
   late final NewPostStore _newPostStore = GetIt.I.get<NewPostStore>();
   late final FeedStore _feedStore = GetIt.I.get<FeedStore>();
 
@@ -28,35 +29,48 @@ class _NewPostPageState extends State<NewPostPage> {
 
   List<AssetEntity> _mediaList = [];
   bool _isLoadingGallery = true;
+  bool _hasPermission = true;
+  bool _wentToSettings = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDevicePhotos();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _descriptionController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _wentToSettings) {
+      _wentToSettings = false;
+      _loadDevicePhotos();
+    }
+  }
+
   Future<void> _loadDevicePhotos() async {
+    setState(() => _isLoadingGallery = true);
+
     final PermissionState ps = await PhotoManager.requestPermissionExtend();
-
-    if (ps.isAuth || ps.hasAccess) {
+    if (ps.isAuth || ps.hasAccess || ps == PermissionState.limited) {
       List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(type: RequestType.image);
-
       if (albums.isNotEmpty) {
         List<AssetEntity> media = await albums[0].getAssetListPaged(page: 0, size: 60);
 
         if (mounted) {
           setState(() {
+            _hasPermission = true;
             _mediaList = media;
             _isLoadingGallery = false;
           });
 
-          if (media.isNotEmpty) {
+          if (media.isNotEmpty && _newPostStore.imagePath == null) {
             final firstFile = await media.first.file;
             if (firstFile != null) {
               _newPostStore.setImagePath(firstFile.path);
@@ -64,17 +78,25 @@ class _NewPostPageState extends State<NewPostPage> {
           }
         }
       } else {
-        setState(() => _isLoadingGallery = false);
+        if (mounted) {
+          setState(() {
+            _hasPermission = true;
+            _isLoadingGallery = false;
+          });
+        }
       }
     } else {
-      setState(() => _isLoadingGallery = false);
-      PhotoManager.openSetting();
+      if (mounted) {
+        setState(() {
+          _hasPermission = false;
+          _isLoadingGallery = false;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
-
     if (photo != null) {
       _newPostStore.setImagePath(photo.path);
     }
@@ -97,12 +119,14 @@ class _NewPostPageState extends State<NewPostPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Publicado com sucesso!'), backgroundColor: Colors.green));
-
       widget.onPostSuccess();
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_newPostStore.appError!.message), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_newPostStore.appError == null ? 'Erro' : _newPostStore.appError!.message),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -115,7 +139,6 @@ class _NewPostPageState extends State<NewPostPage> {
           Observer(
             builder: (_) {
               final isReady = _newPostStore.imagePath != null && _newPostStore.imagePath!.isNotEmpty;
-
               if (_newPostStore.isLoading) {
                 return const Padding(
                   padding: EdgeInsets.only(right: 16.0),
@@ -124,7 +147,6 @@ class _NewPostPageState extends State<NewPostPage> {
                   ),
                 );
               }
-
               return IconButton(
                 icon: const Icon(Icons.send, color: Colors.blue),
                 onPressed: isReady ? _publish : null,
@@ -136,51 +158,82 @@ class _NewPostPageState extends State<NewPostPage> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoadingGallery
-                ? const Center(child: CircularProgressIndicator())
-                : GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 2,
-                      mainAxisSpacing: 2,
-                    ),
-                    itemCount: _mediaList.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return InkWell(
-                          onTap: _takePhoto,
-                          child: Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.camera_alt, size: 40),
-                                SizedBox(height: 4),
-                                Text('Câmera', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
+            child: Column(
+              children: [
+                if (!_hasPermission)
+                  Container(
+                    width: double.infinity,
+                    color: Colors.red.shade900,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Acesso à galeria negado.',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           ),
-                        );
-                      }
-                      final asset = _mediaList[index - 1];
-                      return InkWell(
-                        onTap: () async {
-                          final file = await asset.file;
-                          if (file != null) {
-                            _newPostStore.setImagePath(file.path);
-                          }
-                        },
-                        child: Image(
-                          image: AssetEntityImageProvider(
-                            asset,
-                            isOriginal: false,
-                            thumbnailSize: const ThumbnailSize.square(250),
-                          ),
-                          fit: BoxFit.cover,
                         ),
-                      );
-                    },
+                        TextButton(
+                          onPressed: () {
+                            _wentToSettings = true;
+                            PhotoManager.openSetting();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.red.shade900,
+                          ),
+                          child: const Text('PERMITIR'),
+                        ),
+                      ],
+                    ),
                   ),
+                Expanded(
+                  child: _isLoadingGallery
+                      ? const Center(child: CircularProgressIndicator())
+                      : GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 2,
+                            mainAxisSpacing: 2,
+                          ),
+                          itemCount: _hasPermission ? _mediaList.length + 1 : 1,
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return InkWell(
+                                onTap: _takePhoto,
+                                child: Container(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.camera_alt, size: 40),
+                                      SizedBox(height: 4),
+                                      Text('Câmera', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            final asset = _mediaList[index - 1];
+                            return InkWell(
+                              onTap: () async {
+                                final file = await asset.file;
+                                if (file != null) _newPostStore.setImagePath(file.path);
+                              },
+                              child: Image(
+                                image: AssetEntityImageProvider(
+                                  asset,
+                                  isOriginal: false,
+                                  thumbnailSize: const ThumbnailSize.square(250),
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
           Container(
             height: 120,
